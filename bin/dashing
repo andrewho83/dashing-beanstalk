@@ -14,7 +14,18 @@ end
 SCHEDULER = MockScheduler.new
 
 module Dashing
-
+  class Scheduler < Thor
+    desc "start ENDPOINT AUTH_TOKEN", "Starts the scheduler. Keeps running until the scheduler is finished"
+    method_option :job_path, :desc => "Specify the directory where jobs are stored"
+    def start(endpoint, auth_token)
+      ENV['ENDPOINT']=endpoint
+      ENV['AUTH_TOKEN']=auth_token
+      ENV['JOBS_PATH']= options[:job_path] if options[:job_path]
+      require File.join(File.dirname(__FILE__), '..',  'lib', 'scheduler.rb') #'../lib/scheduler.rb'
+      SCHEDULER.join
+    end
+  end
+  
   class CLI < Thor
     include Thor::Actions
 
@@ -82,7 +93,6 @@ module Dashing
     map "i" => :install
 
     desc "start", "Starts the server in style!"
-    method_option :job_path, :desc => "Specify the directory where jobs are stored"
     def start(*args)
       port_option = args.include?('-p')? '' : ' -p 3030'
       args = args.join(" ")
@@ -105,7 +115,9 @@ module Dashing
       f = File.join(Dir.pwd, "jobs", "#{name}.rb")
       require f
     end
-
+    
+    desc "scheduler SUBCOMMAND ...ARGS", "Takes care of all the scheduler related tasks"
+    subcommand "scheduler", Scheduler
   end
 end
 
